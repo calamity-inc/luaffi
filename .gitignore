@@ -1,0 +1,12 @@
+# Intermediate objects
+int/
+
+# Windows trash
+*.exp
+*.lib
+
+# Windows binaries
+*.dll
+
+# Stray Lua/Pluto executables
+*.exe
