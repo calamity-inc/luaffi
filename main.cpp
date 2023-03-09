@@ -15,6 +15,10 @@
 	{
 		return (uintptr_t)lua_touserdata(L, i);
 	}
+	if (lua_type(L, i) == LUA_TBOOLEAN)
+	{
+		return lua_istrue(L, i) ? 1 : 0;
+	}
 	return (uintptr_t)luaL_checkinteger(L, i);
 }
 
