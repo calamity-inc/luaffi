@@ -60,7 +60,7 @@ static int luaffi_open(lua_State* L)
 	return (uintptr_t)luaL_checkinteger(L, i);
 }
 
-static int luaffi_call(lua_State* L)
+static uintptr_t ffi_call(lua_State* L)
 {
 	std::vector<uintptr_t> args{};
 	const int num_args = (lua_gettop(L) + 1);
@@ -71,7 +71,18 @@ static int luaffi_call(lua_State* L)
 			args.emplace_back(checkregister(L, i));
 		}
 	}
-	lua_pushinteger(L, soup::ffi::fastcall((void*)luaL_checkinteger(L, 1), args));
+	return soup::ffi::fastcall((void*)luaL_checkinteger(L, 1), args);
+}
+
+static int luaffi_call(lua_State* L)
+{
+	lua_pushinteger(L, ffi_call(L));
+	return 1;
+}
+
+static int luaffi_call_string(lua_State* L)
+{
+	lua_pushstring(L, (const char*)ffi_call(L));
 	return 1;
 }
 
@@ -85,6 +96,10 @@ __declspec(dllexport) extern "C" int luaopen_luaffi(lua_State* L)
 
 	lua_pushstring(L, "call");
 	lua_pushcfunction(L, &luaffi_call);
+	lua_settable(L, -3);
+
+	lua_pushstring(L, "call_string");
+	lua_pushcfunction(L, &luaffi_call_string);
 	lua_settable(L, -3);
 
 	return 1;
