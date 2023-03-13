@@ -7,9 +7,15 @@
 
 struct FfiCallArgs
 {
+	lua_State* const L;
 	std::vector<uintptr_t> args{};
 
-	void push(lua_State* L, int i)
+	FfiCallArgs(lua_State* L)
+		: L(L)
+	{
+	}
+
+	void push(int i)
 	{
 		if (lua_type(L, i) == LUA_TSTRING)
 		{
@@ -32,10 +38,10 @@ struct FfiCallArgs
 
 static uintptr_t ffi_call(lua_State* L, void* addr, int i, int num_args)
 {
-	FfiCallArgs args;
+	FfiCallArgs args{ L };
 	for (; i != num_args; ++i)
 	{
-		args.push(L, i);
+		args.push(i);
 	}
 	return soup::ffi::fastcall(addr, args.args);
 }
