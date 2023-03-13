@@ -7,12 +7,38 @@
 
 struct FfiCallArgs
 {
+	inline static FfiCallArgs* instance = nullptr;
+
 	lua_State* const L;
 	std::vector<uintptr_t> args{};
+	bool has_func = false;
 
 	FfiCallArgs(lua_State* L)
 		: L(L)
 	{
+		instance = this;
+	}
+
+	~FfiCallArgs()
+	{
+		instance = nullptr;
+		if (has_func)
+		{
+			lua_pushstring(L, "luaffi_func");
+			lua_pushnil(L);
+			lua_settable(L, LUA_REGISTRYINDEX);
+		}
+	}
+
+	static void funcInvoker()
+	{
+		if (!instance)
+		{
+			throw std::exception("Function invoked too late.");
+		}
+		lua_pushstring(instance->L, "luaffi_func");
+		lua_gettable(instance->L, LUA_REGISTRYINDEX);
+		lua_call(instance->L, 0, 0);
 	}
 
 	void push(int i)
@@ -28,6 +54,18 @@ struct FfiCallArgs
 		else if (lua_type(L, i) == LUA_TBOOLEAN)
 		{
 			args.emplace_back(lua_istrue(L, i) ? 1 : 0);
+		}
+		else if (lua_type(L, i) == LUA_TFUNCTION)
+		{
+			if (has_func)
+			{
+				luaL_error(L, "Can only push a single function per ffi call");
+			}
+			has_func = true;
+			lua_pushstring(L, "luaffi_func");
+			lua_pushvalue(L, i);
+			lua_settable(L, LUA_REGISTRYINDEX);
+			args.emplace_back((uintptr_t)&funcInvoker);
 		}
 		else
 		{
