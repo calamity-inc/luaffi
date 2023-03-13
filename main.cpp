@@ -5,31 +5,39 @@
 #include <soup/joaat.hpp>
 #include <soup/SharedLibrary.hpp>
 
-[[nodiscard]] static uintptr_t checkregister(lua_State* L, int i)
+struct FfiCallArgs
 {
-	if (lua_type(L, i) == LUA_TSTRING)
+	std::vector<uintptr_t> args{};
+
+	void push(lua_State* L, int i)
 	{
-		return reinterpret_cast<uintptr_t>(luaL_checkstring(L, i));
+		if (lua_type(L, i) == LUA_TSTRING)
+		{
+			args.emplace_back(reinterpret_cast<uintptr_t>(luaL_checkstring(L, i)));
+		}
+		else if (lua_type(L, i) == LUA_TUSERDATA)
+		{
+			args.emplace_back((uintptr_t)lua_touserdata(L, i));
+		}
+		else if (lua_type(L, i) == LUA_TBOOLEAN)
+		{
+			args.emplace_back(lua_istrue(L, i) ? 1 : 0);
+		}
+		else
+		{
+			args.emplace_back((uintptr_t)luaL_checkinteger(L, i));
+		}
 	}
-	if (lua_type(L, i) == LUA_TUSERDATA)
-	{
-		return (uintptr_t)lua_touserdata(L, i);
-	}
-	if (lua_type(L, i) == LUA_TBOOLEAN)
-	{
-		return lua_istrue(L, i) ? 1 : 0;
-	}
-	return (uintptr_t)luaL_checkinteger(L, i);
-}
+};
 
 static uintptr_t ffi_call(lua_State* L, void* addr, int i, int num_args)
 {
-	std::vector<uintptr_t> args{};
+	FfiCallArgs args;
 	for (; i != num_args; ++i)
 	{
-		args.emplace_back(checkregister(L, i));
+		args.push(L, i);
 	}
-	return soup::ffi::fastcall(addr, args);
+	return soup::ffi::fastcall(addr, args.args);
 }
 
 static uintptr_t ffi_call(lua_State* L)
