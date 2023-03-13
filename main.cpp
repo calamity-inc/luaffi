@@ -38,6 +38,10 @@ struct FfiCallArgs
 
 static uintptr_t ffi_call(lua_State* L, void* addr, int i, int num_args)
 {
+	if (addr == nullptr)
+	{
+		luaL_error(L, "Attempt to call a nullptr");
+	}
 	FfiCallArgs args{ L };
 	for (; i != num_args; ++i)
 	{
