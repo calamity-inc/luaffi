@@ -80,6 +80,10 @@ static uintptr_t ffi_call(lua_State* L, void* addr, int i, int num_args)
 	{
 		luaL_error(L, "Attempt to call a nullptr");
 	}
+	if (!soup::ffi::isSafeToCall(addr))
+	{
+		luaL_error(L, "Attempt to call an unsafe function");
+	}
 	FfiCallArgs args{ L };
 	for (; i != num_args; ++i)
 	{
